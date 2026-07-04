@@ -1,10 +1,12 @@
 require("dotenv").config();
+const path = require("path");
 const express = require("express");
 const mysql = require("mysql2/promise");
 const { topics: seedTopics, rules: seedRules } = require("./db/seedData");
 
 const app = express();
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
 const PORT = process.env.PORT || 3000;
 

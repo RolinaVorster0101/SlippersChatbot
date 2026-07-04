@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Slippers // a little pattern-matching chatbot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,600&family=Caveat:wght@500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="frame">
+  <div class="titlebar">
+    <h1>Slippers</h1>
+    <div class="tag">a soft little chatbot, stitched together from patterns not neural nets</div>
+    <div class="statusrow"><span class="dot"></span> <span id="statusText">waking up...</span></div>
+  </div>
+
+  <div class="avatarwrap">
+    <svg class="avatar" viewBox="0 0 120 120">
+      <circle cx="60" cy="60" r="58" fill="#fbe6ee"/>
+      <!-- shoulders / outfit -->
+      <g id="shoulderGroup">
+      <path d="M20 118 C24 92 40 82 60 82 C80 82 96 92 100 118 Z" fill="#f6c9dc"/>
+      <path d="M60 82 L48 118 M60 82 L72 118" stroke="#f0aac6" stroke-width="2" fill="none" opacity=".6"/>
+      </g>
+      <!-- neck -->
+      <rect x="52" y="70" width="16" height="18" rx="6" fill="#f3c9a8"/>
+      <!-- necklace -->
+      <circle cx="60" cy="89" r="2.4" fill="#fff" stroke="#e3c48f" stroke-width="1"/>
+      <g id="faceGroup">
+      <!-- face -->
+      <ellipse cx="60" cy="54" rx="27" ry="29" fill="#f6d3b3"/>
+      <!-- hair bun + base -->
+      <path d="M33 50 C30 24 46 8 60 8 C74 8 90 24 87 50 C87 40 78 30 60 30 C42 30 33 40 33 50 Z" fill="#7a4a3a"/>
+      <circle cx="60" cy="14" r="13" fill="#7a4a3a"/>
+      <path d="M33 46 C31 62 34 70 40 78" stroke="#7a4a3a" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <path d="M87 46 C89 58 86 64 82 70" stroke="#7a4a3a" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <!-- blush -->
+      <ellipse cx="45" cy="61" rx="5.5" ry="3.5" fill="#f2a8b4" opacity=".6"/>
+      <ellipse cx="75" cy="61" rx="5.5" ry="3.5" fill="#f2a8b4" opacity=".6"/>
+      <!-- eyes -->
+      <g id="eyeL">
+        <g id="eyeLOpen">
+          <ellipse cx="47" cy="50.5" rx="6" ry="3.2" fill="#fff" stroke="#5b3a45" stroke-width="1"/>
+          <g id="pupilGroupL">
+            <circle cx="47" cy="50.5" r="2.1" fill="#5a3a2a"/>
+            <circle cx="47.9" cy="49.6" r="0.6" fill="#fff" opacity=".85"/>
+          </g>
+          <path d="M41.2 48.3 Q47 46.6 52.8 48.3" stroke="#5b3a45" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+        </g>
+        <path id="eyeLClosed" d="M41 50.5 Q47 53 53 50.5" stroke="#5b3a45" stroke-width="2.2" fill="none" stroke-linecap="round" opacity="0"/>
+      </g>
+      <g id="eyeR">
+        <g id="eyeROpen">
+          <ellipse cx="73" cy="50.5" rx="6" ry="3.2" fill="#fff" stroke="#5b3a45" stroke-width="1"/>
+          <g id="pupilGroupR">
+            <circle cx="73" cy="50.5" r="2.1" fill="#5a3a2a"/>
+            <circle cx="73.9" cy="49.6" r="0.6" fill="#fff" opacity=".85"/>
+          </g>
+          <path d="M67.2 48.3 Q73 46.6 78.8 48.3" stroke="#5b3a45" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+        </g>
+        <path id="eyeRClosed" d="M67 50.5 Q73 53 79 50.5" stroke="#5b3a45" stroke-width="2.2" fill="none" stroke-linecap="round" opacity="0"/>
+      </g>
+      <!-- brows -->
+      <path d="M42 44 Q47 41.5 53 43.5" stroke="#5b3a45" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".8"/>
+      <path d="M67 43.5 Q73 41.5 78 44" stroke="#5b3a45" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".8"/>
+      <!-- mouth -->
+      <path id="mouthPath" d="M54 68 Q60 71.5 66 68" stroke="#c26b83" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <path id="mouthTypingOverlay" d="M53 67.5 Q60 73.5 67 67.5" stroke="#c26b83" stroke-width="2.4" fill="none" stroke-linecap="round" opacity="0" style="transition:opacity .45s ease;"/>
+      <!-- earring -->
+      <circle cx="35" cy="58" r="1.8" fill="#e3c48f"/>
+      <circle cx="85" cy="58" r="1.8" fill="#e3c48f"/>
+      </g>
+      <!-- sparkles -->
+      <path id="sparkleA" d="M14 30 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 Z" fill="#f0aac6" opacity=".8"/>
+      <path id="sparkleB" d="M104 78 l1.5 4 4 1.5 -4 1.5 -1.5 4 -1.5 -4 -4 -1.5 4 -1.5 Z" fill="#e3c48f" opacity=".8"/>
+    </svg>
+  </div>
+
+  <div id="log"></div>
+
+  <div class="inputrow">
+    <div class="row">
+      <input id="userInput" type="text" autocomplete="off" placeholder="say something to Slippers..." disabled>
+      <button id="sendBtn" disabled>➤</button>
+    </div>
+  </div>
+  <div class="lastmsg"><b>your last message:</b> <span id="lastMsg">&mdash;</span></div>
+
+  <div class="footer">
+    <a id="openLog">read the chatlog</a>
+    <span id="ruleCount"></span>
+  </div>
+</div>
+
+<div id="logModal">
+  <div class="box">
+    <h2>Chatlog</h2>
+    <div class="content" id="modalContent"></div>
+    <div class="close"><button id="closeModal">close</button></div>
+  </div>
+</div>
+
+<script src="/js/chat.js"></script>
+</body>
+</html>
