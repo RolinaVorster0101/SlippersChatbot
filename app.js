@@ -7,6 +7,10 @@ const mysql = require("mysql2/promise");
 const { topics: seedTopics, rules: seedRules } = require("./db/seedData");
 
 const app = express();
+app.set("trust proxy", 1); // we sit behind DirectAdmin's LiteSpeed reverse proxy —
+// this makes Express read X-Forwarded-Proto to correctly detect HTTPS, so secure
+// cookies actually get issued instead of silently dropped.
+app.use(express.json());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
