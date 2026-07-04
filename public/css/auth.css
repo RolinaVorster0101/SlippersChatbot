@@ -1,0 +1,103 @@
+.authframe{
+  width:100%;
+  max-width:400px;
+  background:var(--card);
+  border-radius:26px;
+  box-shadow:0 2px 8px rgba(216,140,170,.15), 0 20px 50px rgba(216,140,170,.18);
+  overflow:hidden;
+  border:1px solid var(--line);
+  padding:30px 28px 26px;
+}
+.authframe h1{
+  margin:0 0 4px;
+  text-align:center;
+  font-family:'Playfair Display', serif;
+  font-style:italic;
+  font-weight:600;
+  font-size:32px;
+  color:var(--rose-darker);
+}
+.authframe .subtitle{
+  text-align:center;
+  font-size:13px;
+  color:var(--ink-soft);
+  margin-bottom:22px;
+}
+.field{
+  margin-bottom:14px;
+}
+.field label{
+  display:block;
+  font-size:12px;
+  font-weight:700;
+  color:var(--rose-deep);
+  margin-bottom:5px;
+}
+.field input{
+  width:100%;
+  padding:11px 14px;
+  border:1.5px solid var(--line);
+  border-radius:14px;
+  font-family:'Quicksand', sans-serif;
+  font-weight:600;
+  font-size:14.5px;
+  background:var(--blush);
+  color:var(--ink);
+  outline:none;
+}
+.field input:focus{ border-color:var(--rose); }
+
+/* honeypot: visually hidden from real users, still present in the DOM for bots to fill in */
+.hp-field{
+  position:absolute;
+  left:-9999px;
+  width:1px;
+  height:1px;
+  overflow:hidden;
+}
+
+.turnstile-wrap{
+  margin:16px 0;
+  display:flex;
+  justify-content:center;
+}
+
+.authBtn{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:20px;
+  background:linear-gradient(135deg,var(--rose),var(--rose-deep));
+  color:#fff;
+  font-family:'Quicksand', sans-serif;
+  font-weight:700;
+  font-size:15px;
+  cursor:pointer;
+  box-shadow:0 4px 10px rgba(217,126,166,.4);
+}
+.authBtn:hover{ filter:brightness(1.05); }
+.authBtn:disabled{ opacity:.6; cursor:default; }
+
+.authswitch{
+  text-align:center;
+  margin-top:16px;
+  font-size:13px;
+  color:var(--ink-soft);
+}
+.authswitch a{
+  color:var(--rose-deep);
+  font-weight:700;
+  text-decoration:none;
+  border-bottom:1px dashed var(--rose);
+}
+
+.errorMsg{
+  background:#fde3e3;
+  color:#a33c3c;
+  border-radius:12px;
+  padding:9px 12px;
+  font-size:12.5px;
+  margin-bottom:14px;
+  display:none;
+}
+.errorMsg.show{ display:block; }

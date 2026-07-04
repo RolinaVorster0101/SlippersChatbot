@@ -170,7 +170,7 @@ function respond(raw){
     }
   }
 
-// then DB-driven content rules, respecting topic state.
+  // then DB-driven content rules, respecting topic state.
   // Topic-scoped rules (requiresTopic matches the active topic) are checked
   // BEFORE generic rules, regardless of sort_order — otherwise a generic rule
   // like "I LOVE *" can grab a message before a more specific in-topic rule
@@ -377,41 +377,49 @@ document.getElementById("openLog").addEventListener("click", ()=>{
 });
 document.getElementById("closeModal").addEventListener("click", ()=> modal.style.display = "none");
 
-// ---------- persistence: window.storage (Claude artifacts) or localStorage fallback ----------
-const MEM_KEY = "slippers-memory";
-
+// ---------- persistence: per-account memory via /api/memory ----------
 async function loadSavedMemory(){
   try{
-    if(window.storage){
-      const res = await window.storage.get(MEM_KEY, false);
-      if(res && res.value) Object.assign(mem, JSON.parse(res.value));
-    } else if(window.localStorage){
-      const raw = localStorage.getItem(MEM_KEY);
-      if(raw) Object.assign(mem, JSON.parse(raw));
-    }
+    const res = await fetch("/api/memory");
+    if(!res.ok) return;
+    const data = await res.json();
+    if(data.name) mem.name = data.name;
+    if(typeof data.mood === "number") mem.mood = data.mood;
+    if(data.topic) mem.topic = data.topic;
   } catch(e){ /* no saved memory yet */ }
 }
 
 async function saveMemory(){
-  const payload = JSON.stringify({ name: mem.name, mood: mem.mood, topic: mem.topic });
   try{
-    if(window.storage){
-      await window.storage.set(MEM_KEY, payload, false);
-    } else if(window.localStorage){
-      localStorage.setItem(MEM_KEY, payload);
-    }
+    await fetch("/api/memory", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: mem.name, mood: mem.mood, topic: mem.topic }),
+    });
   } catch(e){ console.error("Slippers couldn't save memory:", e); }
 }
 
 function clearSavedMemory(){
-  try{
-    if(window.storage) window.storage.delete(MEM_KEY, false).catch(()=>{});
-    else if(window.localStorage) localStorage.removeItem(MEM_KEY);
-  } catch(e){ /* ignore */ }
+  fetch("/api/memory", { method: "DELETE" }).catch(()=>{});
 }
+
+document.getElementById("logoutLink").addEventListener("click", async (e) => {
+  e.preventDefault();
+  await fetch("/api/auth/logout", { method: "POST" });
+  window.location.href = "/login.html";
+});
 
 (async function init(){
   try{
+    const meRes = await fetch("/api/auth/me");
+    const meData = await meRes.json();
+    if(!meData.user){
+      window.location.href = "/login.html";
+      return;
+    }
+    document.getElementById("whoText").textContent = "logged in as " + meData.user.username;
+    document.getElementById("whoRow").style.display = "flex";
+
     await loadDbRules();
     await loadSavedMemory();
 

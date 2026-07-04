@@ -1,6 +1,8 @@
 require("dotenv").config();
 const path = require("path");
 const express = require("express");
+const session = require("express-session");
+const MySQLStore = require("express-mysql-session")(session);
 const mysql = require("mysql2/promise");
 const { topics: seedTopics, rules: seedRules } = require("./db/seedData");
 
@@ -10,14 +12,40 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const PORT = process.env.PORT || 3000;
 
-const pool = mysql.createPool({
+const dbConfig = {
   host: process.env.DB_HOST || "localhost",
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+};
+
+const pool = mysql.createPool({
+  ...dbConfig,
   waitForConnections: true,
   connectionLimit: 5,
 });
+
+const sessionStore = new MySQLStore({ ...dbConfig, createDatabaseTable: true });
+
+app.use(session({
+  key: "connect.sid",
+  secret: process.env.SESSION_SECRET || "dev-only-secret-change-me",
+  store: sessionStore,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+    httpOnly: true,
+    sameSite: "lax",
+    // secure:true requires HTTPS, which the live site has (via DirectAdmin) but
+    // localhost doesn't during local dev — so only enable it in production.
+    secure: process.env.NODE_ENV === "production",
+  },
+}));
+
+app.use("/api/auth", require("./server/routes/auth")(pool));
+app.use("/api/memory", require("./server/routes/memory")(pool));
+app.use("/api/admin", require("./server/routes/admin")(pool));
 
 // ---------- self-seed on first boot ----------
 // If the topics table is empty, populate it (and the rules table) from

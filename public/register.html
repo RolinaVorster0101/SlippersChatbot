@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Register // Slippers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,600&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/auth.css">
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+</head>
+<body style="align-items:center;">
+
+<div class="authframe">
+  <h1>Slippers</h1>
+  <div class="subtitle">create an account to start chatting</div>
+
+  <div class="errorMsg" id="errorMsg"></div>
+
+  <form id="registerForm">
+    <div class="field">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" autocomplete="username" required minlength="3" maxlength="20" pattern="[a-zA-Z0-9_]+">
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" autocomplete="new-password" required minlength="8">
+    </div>
+    <div class="field">
+      <label for="password2">Confirm password</label>
+      <input type="password" id="password2" name="password2" autocomplete="new-password" required minlength="8">
+    </div>
+
+    <!-- honeypot: real users never see or fill this in -->
+    <div class="hp-field" aria-hidden="true">
+      <label for="website">Leave this field empty</label>
+      <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+    </div>
+
+    <div class="turnstile-wrap">
+      <div class="cf-turnstile" data-sitekey="0x4AAAAAADvrM0-AMU69l6oS"></div>
+    </div>
+
+    <button type="submit" class="authBtn" id="submitBtn">Create account</button>
+  </form>
+
+  <div class="authswitch">Already have an account? <a href="/login.html">Log in</a></div>
+</div>
+
+<script src="/js/register.js"></script>
+</body>
+</html>

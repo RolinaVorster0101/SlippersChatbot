@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Log in // Slippers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,600&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/auth.css">
+</head>
+<body style="align-items:center;">
+
+<div class="authframe">
+  <h1>Slippers</h1>
+  <div class="subtitle">welcome back</div>
+
+  <div class="errorMsg" id="errorMsg"></div>
+
+  <form id="loginForm">
+    <div class="field">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" autocomplete="username" required>
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" required>
+    </div>
+
+    <button type="submit" class="authBtn" id="submitBtn">Log in</button>
+  </form>
+
+  <div class="authswitch">New here? <a href="/register.html">Create an account</a></div>
+</div>
+
+<script src="/js/login.js"></script>
+</body>
+</html>
