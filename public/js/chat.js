@@ -171,14 +171,25 @@ function respond(raw){
   }
 
   // then DB-driven content rules, respecting topic state.
-  // Topic-scoped rules (requiresTopic matches the active topic) are checked
-  // BEFORE generic rules, regardless of sort_order — otherwise a generic rule
-  // like "I LOVE *" can grab a message before a more specific in-topic rule
-  // like "I LOVE DANCING" (under BALLET) ever gets a chance to match.
+  // Two layers of priority, both existing to make specific rules win over vague ones:
+  //  1. Topic-scoped rules (requiresTopic matches the active topic) before generic ones —
+  //     otherwise a generic "I LOVE *" could grab a message before a specific
+  //     in-topic follow-up like "I LOVE DANCING" (under BALLET) ever gets a chance.
+  //  2. Within each of those groups, exact-phrase rules (no "*") before wildcard
+  //     rules — otherwise a generic "DO YOU LIKE *" could grab "DO YOU LIKE BALLET"
+  //     before the specific, no-wildcard ballet-entry rule ever gets a chance.
+  function hasWildcard(rule){
+    return rule.patterns.some(p => p.includes("*"));
+  }
+  function bySpecificity(list){
+    return [...list.filter(r => !hasWildcard(r)), ...list.filter(r => hasWildcard(r))];
+  }
+
   const topicScoped = dbRules.filter(r => r.requiresTopic && r.requiresTopic === mem.topic);
   const generic = dbRules.filter(r => !r.requiresTopic);
+  const orderedRules = [...bySpecificity(topicScoped), ...bySpecificity(generic)];
 
-  for(const rule of [...topicScoped, ...generic]){
+  for(const rule of orderedRules){
     for(const re of rule.compiled){
       const m = norm.match(re);
       if(m){

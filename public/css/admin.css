@@ -1,0 +1,249 @@
+.adminBody{
+  display:block;
+  padding:0;
+  background:var(--blush);
+  align-items:stretch;
+  justify-content:stretch;
+}
+
+.adminTopbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:16px 28px;
+  background:var(--card);
+  border-bottom:1px solid var(--line);
+}
+.adminTopbar h1{
+  margin:0;
+  font-family:'Playfair Display', serif;
+  font-style:italic;
+  font-weight:600;
+  font-size:24px;
+  color:var(--rose-darker);
+}
+.adminTag{
+  font-family:'Quicksand', sans-serif;
+  font-style:normal;
+  font-size:12px;
+  font-weight:700;
+  color:#fff;
+  background:var(--rose-deep);
+  padding:2px 10px;
+  border-radius:10px;
+  vertical-align:middle;
+  margin-left:6px;
+}
+.adminTopbarRight{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  font-size:13px;
+  color:var(--ink-soft);
+}
+.topLink{
+  color:var(--rose-deep);
+  font-weight:700;
+  text-decoration:none;
+  border-bottom:1px dashed var(--rose);
+}
+
+.adminLayout{
+  display:flex;
+  min-height:calc(100vh - 65px);
+}
+
+.sidebar{
+  width:240px;
+  flex:0 0 240px;
+  background:var(--card);
+  border-right:1px solid var(--line);
+  padding:18px 14px;
+  display:flex;
+  flex-direction:column;
+}
+.sidebarHeader{
+  font-family:'Quicksand', sans-serif;
+  font-weight:700;
+  font-size:13px;
+  color:var(--rose-deep);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  margin-bottom:10px;
+  padding:0 6px;
+}
+#topicList{
+  list-style:none;
+  margin:0;
+  padding:0;
+  flex:1;
+}
+.topicItem{
+  padding:10px 12px;
+  border-radius:12px;
+  cursor:pointer;
+  font-size:14px;
+  color:var(--ink);
+  margin-bottom:4px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.topicItem:hover{ background:var(--blush2); }
+.topicItem.active{
+  background:var(--rose);
+  color:#fff;
+  font-weight:700;
+}
+.topicItem .deleteTopicBtn{
+  opacity:.6;
+  font-size:12px;
+  background:none;
+  border:none;
+  cursor:pointer;
+  color:inherit;
+}
+.topicItem .deleteTopicBtn:hover{ opacity:1; }
+.generalItem{
+  border-top:1px solid var(--line);
+  margin-top:8px;
+  padding-top:14px;
+  font-style:italic;
+  color:var(--ink-soft);
+}
+.generalItem.active{ color:#fff; font-style:normal; }
+
+.addTopicBtn{
+  margin-top:12px;
+  padding:9px;
+  border:1.5px dashed var(--rose);
+  background:none;
+  border-radius:12px;
+  color:var(--rose-deep);
+  font-family:'Quicksand', sans-serif;
+  font-weight:700;
+  font-size:13px;
+  cursor:pointer;
+}
+.addTopicBtn:hover{ background:var(--blush2); }
+
+.rulesPane{
+  flex:1;
+  padding:22px 30px;
+  overflow-y:auto;
+}
+.rulesPaneHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:18px;
+}
+.rulesPaneHeader h2{
+  margin:0;
+  font-family:'Playfair Display', serif;
+  font-style:italic;
+  color:var(--rose-darker);
+  font-size:22px;
+}
+.addRuleBtn{
+  padding:9px 18px;
+  border:none;
+  border-radius:16px;
+  background:linear-gradient(135deg,var(--rose),var(--rose-deep));
+  color:#fff;
+  font-family:'Quicksand', sans-serif;
+  font-weight:700;
+  font-size:13px;
+  cursor:pointer;
+  box-shadow:0 4px 10px rgba(217,126,166,.35);
+}
+
+.ruleCard{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:16px 18px;
+  margin-bottom:14px;
+}
+.ruleCard.disabledCard{ opacity:.55; }
+.ruleCardRow{ margin-bottom:12px; }
+.ruleCardRow label{
+  display:block;
+  font-size:12px;
+  font-weight:700;
+  color:var(--rose-deep);
+  margin-bottom:4px;
+}
+.ruleCardRow .hint{
+  font-weight:500;
+  color:var(--ink-soft);
+  text-transform:none;
+  letter-spacing:0;
+}
+.ruleCardRow textarea, .ruleCardRow input[type="text"], .ruleCardGrid input, .ruleCardGrid select{
+  width:100%;
+  padding:9px 12px;
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  font-family:'Quicksand', sans-serif;
+  font-size:13.5px;
+  background:var(--blush);
+  color:var(--ink);
+  box-sizing:border-box;
+}
+.ruleCardRow textarea{ resize:vertical; }
+
+.ruleCardGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr 100px;
+  gap:12px;
+  margin-bottom:12px;
+}
+.ruleCardGrid label{
+  display:block;
+  font-size:12px;
+  font-weight:700;
+  color:var(--rose-deep);
+  margin-bottom:4px;
+}
+
+.ruleCardCheckboxes{
+  display:flex;
+  gap:20px;
+}
+.checkboxLabel{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:13px;
+  font-weight:600;
+  color:var(--ink);
+}
+
+.ruleCardActions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:6px;
+}
+.saveRuleBtn, .deleteRuleBtn{
+  padding:8px 16px;
+  border-radius:14px;
+  border:none;
+  font-family:'Quicksand', sans-serif;
+  font-weight:700;
+  font-size:13px;
+  cursor:pointer;
+}
+.saveRuleBtn{
+  background:linear-gradient(135deg,var(--rose),var(--rose-deep));
+  color:#fff;
+}
+.deleteRuleBtn{
+  background:#fde3e3;
+  color:#a33c3c;
+}
+.saveStatus{
+  font-size:12px;
+  color:var(--ink-soft);
+}

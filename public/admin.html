@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin // Slippers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,600&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="adminBody">
+
+<div class="adminTopbar">
+  <h1>Slippers <span class="adminTag">admin</span></h1>
+  <div class="adminTopbarRight">
+    <span id="whoText"></span>
+    <a href="/" class="topLink">back to chat</a>
+    <a href="#" id="logoutLink" class="topLink">log out</a>
+  </div>
+</div>
+
+<div class="adminLayout">
+  <aside class="sidebar">
+    <div class="sidebarHeader">Topics</div>
+    <ul id="topicList"></ul>
+    <li class="topicItem generalItem" id="generalTopicBtn" data-topic-id="">General (no topic)</li>
+    <button class="addTopicBtn" id="addTopicBtn">+ New Topic</button>
+  </aside>
+
+  <main class="rulesPane">
+    <div class="rulesPaneHeader">
+      <h2 id="selectedTopicTitle">General (no topic)</h2>
+      <button class="addRuleBtn" id="addRuleBtn">+ New Rule</button>
+    </div>
+    <div id="rulesList"></div>
+  </main>
+</div>
+
+<template id="ruleCardTemplate">
+  <div class="ruleCard">
+    <div class="ruleCardRow">
+      <label>Patterns <span class="hint">(one per line, use * as a wildcard word-group)</span></label>
+      <textarea class="rc-patterns" rows="3"></textarea>
+    </div>
+    <div class="ruleCardRow">
+      <label>Replies <span class="hint">(one per line — a random one is picked each time; use {0} for a captured star, {botName} for her name)</span></label>
+      <textarea class="rc-replies" rows="3"></textarea>
+    </div>
+    <div class="ruleCardGrid">
+      <div>
+        <label>Requires topic</label>
+        <select class="rc-requiresTopic"></select>
+      </div>
+      <div>
+        <label>Sets topic</label>
+        <select class="rc-setsTopic"></select>
+      </div>
+      <div>
+        <label>Sort order</label>
+        <input type="number" class="rc-sortOrder" value="0">
+      </div>
+    </div>
+    <div class="ruleCardRow ruleCardCheckboxes">
+      <label class="checkboxLabel"><input type="checkbox" class="rc-clearsTopic"> Clears topic on match</label>
+      <label class="checkboxLabel"><input type="checkbox" class="rc-enabled" checked> Enabled</label>
+    </div>
+    <div class="ruleCardRow">
+      <label>Notes <span class="hint">(admin-facing label, optional)</span></label>
+      <input type="text" class="rc-notes">
+    </div>
+    <div class="ruleCardActions">
+      <button class="saveRuleBtn">Save</button>
+      <button class="deleteRuleBtn">Delete</button>
+      <span class="saveStatus"></span>
+    </div>
+  </div>
+</template>
+
+<script src="/js/admin.js"></script>
+</body>
+</html>
