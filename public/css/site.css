@@ -1,0 +1,99 @@
+.siteFooter{
+  max-width:760px;
+  margin:18px auto 0;
+  padding:18px 24px 28px;
+  text-align:center;
+  font-size:12px;
+  line-height:1.8;
+  color:var(--ink-soft);
+}
+.siteFooter a{
+  color:var(--rose-deep);
+  text-decoration:none;
+  border-bottom:1px dashed var(--rose);
+}
+.siteFooter .footerName{
+  font-weight:700;
+  color:var(--ink);
+}
+
+/* cookie consent banner */
+#cookieBanner{
+  position:fixed;
+  left:0; right:0; bottom:0;
+  z-index:100;
+  background:var(--card);
+  border-top:2px solid var(--rose);
+  box-shadow:0 -6px 20px rgba(91,58,69,.12);
+  padding:16px 20px;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:center;
+  gap:16px;
+}
+#cookieBanner p{
+  margin:0;
+  font-size:13px;
+  color:var(--ink);
+  max-width:560px;
+  line-height:1.5;
+  flex:1 1 320px;
+}
+#cookieBanner p a{
+  color:var(--rose-deep);
+  border-bottom:1px dashed var(--rose);
+  text-decoration:none;
+}
+#cookieBanner .cookieBtns{
+  display:flex;
+  gap:10px;
+  flex:0 0 auto;
+}
+#cookieBanner button{
+  padding:9px 18px;
+  border-radius:16px;
+  border:none;
+  font-family:'Quicksand', sans-serif;
+  font-weight:700;
+  font-size:13px;
+  cursor:pointer;
+}
+#cookieAccept{
+  background:linear-gradient(135deg,var(--rose),var(--rose-deep));
+  color:#fff;
+  box-shadow:0 4px 10px rgba(217,126,166,.35);
+}
+#cookieReject{
+  background:var(--blush2);
+  color:var(--ink);
+}
+
+/* admin nav pill, shown in the chat header only for admins */
+.navAdminBtn{
+  display:inline-block;
+  padding:2px 12px;
+  border-radius:12px;
+  background:linear-gradient(135deg,var(--rose),var(--rose-deep));
+  color:#fff !important;
+  font-weight:700;
+  font-size:11px;
+  text-decoration:none;
+  border-bottom:none !important;
+}
+
+@media (max-width: 600px){
+  #cookieBanner{
+    flex-direction:column;
+    align-items:stretch;
+    padding:14px 16px;
+  }
+  #cookieBanner p{ font-size:12.5px; }
+  #cookieBanner .cookieBtns{
+    justify-content:stretch;
+  }
+  #cookieBanner .cookieBtns button{
+    flex:1;
+  }
+  .siteFooter{ font-size:11.5px; padding:14px 18px 22px; }
+}

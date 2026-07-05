@@ -2,11 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Admin // Slippers</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,600&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css">
 <link rel="stylesheet" href="/css/admin.css">
+<link rel="stylesheet" href="/css/site.css">
 </head>
 <body class="adminBody">
 
@@ -38,13 +40,18 @@
 
 <template id="ruleCardTemplate">
   <div class="ruleCard">
+    <div class="specialBadge" style="display:none;"></div>
     <div class="ruleCardRow">
       <label>Patterns <span class="hint">(one per line, use * as a wildcard word-group)</span></label>
       <textarea class="rc-patterns" rows="3"></textarea>
     </div>
     <div class="ruleCardRow">
-      <label>Replies <span class="hint">(one per line — a random one is picked each time; use {0} for a captured star, {botName} for her name)</span></label>
+      <label>Replies <span class="hint">(one per line — a random one is picked each time; use {0} for a captured star, {botName} for her name, {name} for the user's stored name, {mood} for her mood word, {reflect0} for a pronoun-swapped star)</span></label>
       <textarea class="rc-replies" rows="3"></textarea>
+    </div>
+    <div class="ruleCardRow rc-altWrap" style="display:none;">
+      <label>Alternate replies <span class="hint">(used when the name isn't known yet)</span></label>
+      <textarea class="rc-repliesAlt" rows="2"></textarea>
     </div>
     <div class="ruleCardGrid">
       <div>
@@ -77,5 +84,6 @@
 </template>
 
 <script src="/js/admin.js"></script>
+<script src="/js/cookieConsent.js"></script>
 </body>
 </html>

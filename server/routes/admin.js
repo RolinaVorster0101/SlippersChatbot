@@ -47,8 +47,8 @@ module.exports = function(pool){
   // ---------- rules ----------
   router.get("/rules", async (req, res) => {
     const [rows] = await pool.query(`
-      SELECT r.id, r.patterns, r.replies, r.sort_order, r.enabled, r.notes,
-             r.clears_topic, r.requires_topic_id, r.sets_topic_id,
+      SELECT r.id, r.patterns, r.replies, r.replies_alt, r.sort_order, r.enabled, r.notes,
+             r.clears_topic, r.requires_topic_id, r.sets_topic_id, r.special_key,
              rt.code AS requires_topic_code, st.code AS sets_topic_code
       FROM rules r
       LEFT JOIN topics rt ON r.requires_topic_id = rt.id
@@ -59,6 +59,9 @@ module.exports = function(pool){
       id: row.id,
       patterns: typeof row.patterns === "string" ? JSON.parse(row.patterns) : row.patterns,
       replies: typeof row.replies === "string" ? JSON.parse(row.replies) : row.replies,
+      repliesAlt: row.replies_alt
+        ? (typeof row.replies_alt === "string" ? JSON.parse(row.replies_alt) : row.replies_alt)
+        : null,
       sortOrder: row.sort_order,
       enabled: !!row.enabled,
       notes: row.notes,
@@ -67,12 +70,13 @@ module.exports = function(pool){
       setsTopicId: row.sets_topic_id,
       requiresTopicCode: row.requires_topic_code,
       setsTopicCode: row.sets_topic_code,
+      specialKey: row.special_key || null,
     }));
     res.json(shaped);
   });
 
   router.post("/rules", async (req, res) => {
-    const { patterns, replies, requiresTopicId, setsTopicId, clearsTopic, sortOrder, notes } = req.body || {};
+    const { patterns, replies, repliesAlt, requiresTopicId, setsTopicId, clearsTopic, sortOrder, notes } = req.body || {};
     if(!Array.isArray(patterns) || patterns.length === 0){
       return res.status(400).json({ error: "patterns must be a non-empty array" });
     }
@@ -81,14 +85,15 @@ module.exports = function(pool){
     }
     try{
       const [result] = await pool.query(
-        `INSERT INTO rules (requires_topic_id, sets_topic_id, clears_topic, patterns, replies, sort_order, enabled, notes)
-         VALUES (?, ?, ?, ?, ?, ?, 1, ?)`,
+        `INSERT INTO rules (requires_topic_id, sets_topic_id, clears_topic, patterns, replies, replies_alt, sort_order, enabled, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`,
         [
           requiresTopicId || null,
           setsTopicId || null,
           clearsTopic ? 1 : 0,
           JSON.stringify(patterns.map(p => p.toUpperCase().trim())),
           JSON.stringify(replies),
+          repliesAlt && repliesAlt.length ? JSON.stringify(repliesAlt) : null,
           sortOrder || 0,
           notes || null,
         ]
@@ -101,16 +106,23 @@ module.exports = function(pool){
   });
 
   router.put("/rules/:id", async (req, res) => {
-    const { patterns, replies, requiresTopicId, setsTopicId, clearsTopic, sortOrder, notes, enabled } = req.body || {};
+    const { patterns, replies, repliesAlt, requiresTopicId, setsTopicId, clearsTopic, sortOrder, notes, enabled } = req.body || {};
+    if(!Array.isArray(patterns) || patterns.length === 0){
+      return res.status(400).json({ error: "patterns must be a non-empty array" });
+    }
+    if(!Array.isArray(replies) || replies.length === 0){
+      return res.status(400).json({ error: "replies must be a non-empty array" });
+    }
     try{
       await pool.query(
         `UPDATE rules SET
-           patterns = ?, replies = ?, requires_topic_id = ?, sets_topic_id = ?,
+           patterns = ?, replies = ?, replies_alt = ?, requires_topic_id = ?, sets_topic_id = ?,
            clears_topic = ?, sort_order = ?, notes = ?, enabled = ?
          WHERE id = ?`,
         [
           JSON.stringify(patterns.map(p => p.toUpperCase().trim())),
           JSON.stringify(replies),
+          repliesAlt && repliesAlt.length ? JSON.stringify(repliesAlt) : null,
           requiresTopicId || null,
           setsTopicId || null,
           clearsTopic ? 1 : 0,
@@ -128,6 +140,12 @@ module.exports = function(pool){
   });
 
   router.delete("/rules/:id", async (req, res) => {
+    const [rows] = await pool.query("SELECT special_key FROM rules WHERE id = ?", [req.params.id]);
+    if(rows.length && rows[0].special_key){
+      return res.status(400).json({
+        error: "This rule powers a built-in behavior (name memory, mood, feelings, or forget-me) and can't be deleted. You can disable it instead."
+      });
+    }
     await pool.query("DELETE FROM rules WHERE id = ?", [req.params.id]);
     res.json({ ok: true });
   });

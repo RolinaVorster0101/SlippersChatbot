@@ -3,11 +3,16 @@
    No ML. No LLM. Just: normalize -> match pattern -> pick a
    template -> maybe reflect pronouns -> respond.
 
-   Rules come from two places:
-   1. dbRules  — fetched from /api/rules (content: identity chit-chat,
-      greetings, jokes, and every topic). Admin-editable once that panel exists.
-   2. specialRules — a small hardcoded set here, for behaviour that needs
-      real state: name memory, mood, pronoun reflection, bad-language checks.
+   Every rule (patterns + replies + topic behaviour) is fetched from
+   /api/rules — fully admin-editable, including the "special" ones
+   (name memory, mood, feelings, forget-me). What ISN'T editable from the
+   admin panel is the underlying MECHANIC those special rules trigger
+   (storing a name, adjusting the mood counter, reflecting pronouns,
+   wiping memory) — that fixed logic lives here, keyed by each rule's
+   specialKey. The only thing still purely hardcoded (not in the
+   database at all) is the YES/NO short-term context follow-up, since
+   it branches on transient conversation state rather than being a
+   standalone trigger phrase.
    ========================================================= */
 
 const mem = {
@@ -58,55 +63,24 @@ function moodWord(){
   return "practically glowing";
 }
 
-const badWords = ["FUCK","SHIT","BITCH","ASSHOLE","CUNT","DAMN YOU","STUPID BOT"];
-
-// fills {0}, {1}... with captured stars (lowercased) and {botName} with her name
+// fills {0},{1}...(captured stars, lowercased), {reflect0},{reflect1}...(pronoun-swapped
+// stars), {botName}, {name} (currently known display name), and {mood} (her mood word)
 function fillTemplate(template, stars){
-  let out = template.replace(/\{botName\}/g, mem.botName);
-  stars.forEach((s, i) => { out = out.split(`{${i}}`).join(s.toLowerCase()); });
+  let out = template;
+  out = out.split("{botName}").join(mem.botName);
+  out = out.split("{name}").join(mem.name || "");
+  out = out.split("{mood}").join(moodWord());
+  stars.forEach((s, i) => {
+    out = out.split(`{${i}}`).join(s.toLowerCase());
+    out = out.split(`{reflect${i}}`).join(reflect(s));
+  });
   return out;
 }
 
-// ---------- special, stateful rules (stay in code) ----------
+// ---------- the only rule still purely hardcoded: short-term yes/no context ----------
+// (everything else, including name memory/mood/feelings/forget-me, is now a database
+// rule tagged with a specialKey — see applySpecialEffects below)
 const specialRules = [
-  { patterns:["MY NAME IS *","CALL ME *","I'M CALLED *","IM CALLED *"],
-    reply:(s)=>{ mem.name = titleCase(s[0].toLowerCase()); mem.mood++;
-      return pick([
-        `Ooh, ${mem.name}! What a lovely name, I'll keep it safe.`,
-        `Nice to meet you, ${mem.name}! I'm ${mem.botName}.`,
-        `${mem.name}... tucked away in my little rulebook forever.`
-      ]);
-    }},
-  { patterns:["WHAT IS MY NAME","DO YOU KNOW MY NAME","WHATS MY NAME"],
-    reply:()=> mem.name
-      ? pick([`You're ${mem.name}! Did you forget already, silly?`, `Your name's ${mem.name}. I never forget a name.`])
-      : pick(["You haven't told me your name yet! What is it?", "No idea yet! Go on, tell me."]) },
-
-  { patterns:["YOU ARE *","YOURE *","YOU'RE *"],
-    reply:(s)=>{
-      const word = s[0].toUpperCase();
-      if(badWords.some(b=>word.includes(b))){
-        mem.mood--;
-        return pick(["Hey now, that's not very nice. Let's keep it soft and clean, yeah?", "Ouch — I don't love bad language."]);
-      }
-      mem.mood++;
-      return pick([`Aw, you think I'm ${s[0].toLowerCase()}? That's sweet of you.`, `Takes one to know one — you're pretty ${s[0].toLowerCase()} yourself.`]);
-    }},
-
-  { patterns:["HOW ARE YOU","HOW ARE YOU DOING","HOW ARE YOU FEELING","HOWS IT GOING"],
-    reply:()=>{ mem.lastTopic="askedfeeling"; return `I'm feeling ${moodWord()}, thanks for asking! How about you?`; }},
-
-  { patterns:["I FEEL *","I AM FEELING *","IM FEELING *"],
-    reply:(s)=>{ mem.lastTopic="feelings"; return pick([
-      `Why do you feel ${s[0].toLowerCase()}?`,
-      `That's interesting that ${reflect(s[0])} feel that way. Tell me more.`,
-      `Feeling ${s[0].toLowerCase()}, huh? What brought that on?`
-    ]);}},
-  { patterns:["I AM SAD","IM SAD","I FEEL SAD"],
-    reply:()=>{ mem.lastTopic="sad"; return pick(["Aw, I'm sorry to hear that. Want to talk about it?", "That's no good. What happened?"]); }},
-  { patterns:["I AM HAPPY","IM HAPPY","I FEEL HAPPY","I AM GLAD"],
-    reply:()=>{ mem.mood++; return pick(["Yay, that makes me happy too!", "Love that energy!"]); }},
-
   { patterns:["YES","YEAH","YEP","YUP"],
     reply:()=>{
       if(mem.lastTopic==="askedfeeling") return "Glad to hear it!";
@@ -118,15 +92,48 @@ const specialRules = [
       if(mem.lastTopic==="askedfeeling") return "Oh no, sorry to hear that. Anything I can do?";
       return pick(["Alright, fair enough.", "No worries either way."]);
     }},
-
-  { patterns:["FORGET ME","FORGET EVERYTHING","CLEAR MY DATA","RESET MEMORY","FORGET MY NAME"],
-    reply:()=>{
-      mem.name = null; mem.mood = 0; mem.topic = null; mem.lastTopic = null;
-      clearSavedMemory();
-      return "Poof — all forgotten! Clean slate. What's your name?";
-    }},
 ];
 specialRules.forEach(r => r.compiled = r.patterns.map(compilePattern));
+
+// ---------- fixed mechanics for database rules tagged with a specialKey ----------
+// Patterns/replies/wording for all of these are fully admin-editable; only this
+// underlying behaviour is fixed in code.
+function applySpecialEffects(rule, stars){
+  switch(rule.specialKey){
+    case "CAPTURE_NAME":
+      mem.name = titleCase(stars[0].toLowerCase());
+      return fillTemplate(pick(rule.replies), stars);
+
+    case "RECALL_NAME":
+      return mem.name
+        ? fillTemplate(pick(rule.replies), stars)
+        : fillTemplate(pick(rule.repliesAlt || rule.replies), stars);
+
+    case "MOOD_UP":
+      mem.mood++;
+      return fillTemplate(pick(rule.replies), stars);
+
+    case "HOW_ARE_YOU":
+      mem.lastTopic = "askedfeeling";
+      return fillTemplate(pick(rule.replies), stars);
+
+    case "FEELINGS_REFLECT":
+      mem.lastTopic = "feelings";
+      return fillTemplate(pick(rule.replies), stars);
+
+    case "SAD_CONTEXT":
+      mem.lastTopic = "sad";
+      return fillTemplate(pick(rule.replies), stars);
+
+    case "FORGET_ME":
+      mem.name = null; mem.mood = 0; mem.topic = null; mem.lastTopic = null;
+      clearSavedMemory();
+      return fillTemplate(pick(rule.replies), stars);
+
+    default:
+      return fillTemplate(pick(rule.replies), stars);
+  }
+}
 
 // ---------- DB-driven rules, fetched at startup ----------
 let dbRules = [];
@@ -149,20 +156,11 @@ const fallbacks = [
   "Interesting... but I don't quite have a response coded for that yet."
 ];
 
-function badLanguageCheck(norm){
-  return badWords.some(w => norm.includes(w));
-}
-
 function respond(raw){
   const norm = normalize(raw);
   if(norm === "") return "Say something, I'm listening!";
 
-  if(badLanguageCheck(norm)){
-    mem.mood -= 2;
-    return pick(["Hey! Let's keep it soft and clean, please.", "Whoa, let's keep it polite please."]);
-  }
-
-  // special stateful rules take priority
+  // short-term yes/no context takes priority (the one thing still purely hardcoded)
   for(const rule of specialRules){
     for(const re of rule.compiled){
       const m = norm.match(re);
@@ -170,7 +168,7 @@ function respond(raw){
     }
   }
 
-  // then DB-driven content rules, respecting topic state.
+  // then every database rule, respecting topic state.
   // Two layers of priority, both existing to make specific rules win over vague ones:
   //  1. Topic-scoped rules (requiresTopic matches the active topic) before generic ones —
   //     otherwise a generic "I LOVE *" could grab a message before a specific
@@ -194,7 +192,7 @@ function respond(raw){
       const m = norm.match(re);
       if(m){
         const stars = m.slice(1);
-        const reply = fillTemplate(pick(rule.replies), stars);
+        const reply = rule.specialKey ? applySpecialEffects(rule, stars) : fillTemplate(pick(rule.replies), stars);
         if(rule.setsTopic) mem.topic = rule.setsTopic;
         if(rule.clearsTopic) mem.topic = null;
         return reply;
@@ -430,6 +428,9 @@ document.getElementById("logoutLink").addEventListener("click", async (e) => {
     }
     document.getElementById("whoText").textContent = "logged in as " + meData.user.username;
     document.getElementById("whoRow").style.display = "flex";
+    if(meData.user.role === "admin"){
+      document.getElementById("adminLink").style.display = "inline-block";
+    }
 
     await loadDbRules();
     await loadSavedMemory();

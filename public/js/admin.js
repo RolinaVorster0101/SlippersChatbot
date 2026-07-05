@@ -86,8 +86,11 @@ function renderRuleCard(rule){
   const node = template.content.cloneNode(true);
   const card = node.querySelector(".ruleCard");
 
+  const badgeEl = node.querySelector(".specialBadge");
   const patternsEl = node.querySelector(".rc-patterns");
   const repliesEl = node.querySelector(".rc-replies");
+  const altWrap = node.querySelector(".rc-altWrap");
+  const repliesAltEl = node.querySelector(".rc-repliesAlt");
   const requiresSel = node.querySelector(".rc-requiresTopic");
   const setsSel = node.querySelector(".rc-setsTopic");
   const sortOrderEl = node.querySelector(".rc-sortOrder");
@@ -100,8 +103,17 @@ function renderRuleCard(rule){
 
   const isNew = rule.id == null;
 
+  if(rule.specialKey){
+    badgeEl.style.display = "inline-block";
+    badgeEl.textContent = "⚙ built-in behavior: " + rule.specialKey;
+  }
+  if(rule.specialKey === "RECALL_NAME" || (rule.repliesAlt && rule.repliesAlt.length)){
+    altWrap.style.display = "block";
+  }
+
   patternsEl.value = (rule.patterns || []).join("\n");
   repliesEl.value = (rule.replies || []).join("\n");
+  repliesAltEl.value = (rule.repliesAlt || []).join("\n");
   buildTopicOptions(requiresSel, rule.requiresTopicId);
   buildTopicOptions(setsSel, rule.setsTopicId);
   sortOrderEl.value = rule.sortOrder || 0;
@@ -121,6 +133,7 @@ function renderRuleCard(rule){
     const payload = {
       patterns: patternsEl.value.split("\n").map(s => s.trim()).filter(Boolean),
       replies: repliesEl.value.split("\n").map(s => s.trim()).filter(Boolean),
+      repliesAlt: repliesAltEl.value.split("\n").map(s => s.trim()).filter(Boolean),
       requiresTopicId: requiresSel.value ? Number(requiresSel.value) : null,
       setsTopicId: setsSel.value ? Number(setsSel.value) : null,
       sortOrder: Number(sortOrderEl.value) || 0,
@@ -149,8 +162,12 @@ function renderRuleCard(rule){
   if(!isNew){
     deleteBtn.addEventListener("click", async () => {
       if(!confirm("Delete this rule permanently?")) return;
-      await api(`/api/admin/rules/${rule.id}`, { method: "DELETE" });
-      await loadAll();
+      try{
+        await api(`/api/admin/rules/${rule.id}`, { method: "DELETE" });
+        await loadAll();
+      } catch(err){
+        alert(err.message);
+      }
     });
   }
 
@@ -181,6 +198,7 @@ document.getElementById("addRuleBtn").addEventListener("click", () => {
     id: null,
     patterns: [],
     replies: [],
+    repliesAlt: [],
     requiresTopicId: selectedTopicId,
     setsTopicId: null,
     sortOrder: 0,
