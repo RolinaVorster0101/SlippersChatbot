@@ -280,25 +280,7 @@
   }
   .sidebarHeader{ padding:0 4px 6px; }
   #topicList{
-    display:flex;
-    flex-direction:row;
-    overflow-x:auto;
-    gap:6px;
-    padding-bottom:4px;
     flex:none;
-  }
-  .topicItem{
-    white-space:nowrap;
-    margin-bottom:0;
-    flex:0 0 auto;
-  }
-  .generalItem{
-    border-top:none;
-    border-left:1px solid var(--line);
-    margin-top:0;
-    padding-top:10px;
-    padding-left:12px;
-    margin-left:2px;
   }
   .addTopicBtn{
     margin-top:8px;
