@@ -214,6 +214,42 @@ document.getElementById("logoutLink").addEventListener("click", async (e) => {
   window.location.href = "/login.html";
 });
 
+document.getElementById("exportBtn").addEventListener("click", async () => {
+  try{
+    const data = await api("/api/admin/export");
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `slippers-rules-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(err){
+    alert("Export failed: " + err.message);
+  }
+});
+
+document.getElementById("importFile").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const data = JSON.parse(text);
+    const result = await api("/api/admin/import", { method: "POST", body: JSON.stringify(data) });
+    alert(
+      `Import complete:\n` +
+      `${result.topicsAdded} topic(s) added\n` +
+      `${result.rulesAdded} rule(s) added\n` +
+      `${result.rulesSkippedDuplicate} skipped (already exist)\n` +
+      `${result.rulesSkippedSpecial} skipped (built-in behavior rules, never imported)`
+    );
+    await loadAll();
+  } catch(err){
+    alert("Import failed: " + err.message);
+  }
+  e.target.value = ""; // allow re-selecting the same file later
+});
+
 (async function init(){
   const meRes = await fetch("/api/auth/me");
   const meData = await meRes.json();

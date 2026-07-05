@@ -24,6 +24,44 @@ const mem = {
   history: []
 };
 
+// Set during init() once we know who's logged in. Admin's own account is exempt
+// from the output filter below — this is a safety net for regular/child-accessible
+// accounts, not a restriction on what you (the admin) can test with.
+let isAdmin = false;
+
+// Words Slippers will never repeat back in a reply. This is NOT a filter on what
+// a person is allowed to type — she never reacts to, scolds, or blocks any input.
+// It only ever touches her OUTPUT: several rules echo the user's own words back
+// (e.g. "YOU ARE *" -> "you think I'm {0}?", "I FEEL *" -> reflects it back). This
+// stops that echo from repeating a restricted word, for non-admin accounts only.
+// Note: this is a reasonable-effort word list, not evasion-proof — determined
+// leetspeak/spacing tricks can still slip through.
+const restrictedWords = [
+  "FUCK","FUCKING","FUCKED","FUCKER","FUCKERS",
+  "SHIT","SHITTY","SHITTING","SHITHEAD",
+  "BITCH","BITCHING","BITCHY","BITCHES",
+  "CUNT","CUNTS",
+  "ASSHOLE","ASSHOLES",
+  "BASTARD","BASTARDS",
+  "DICK","DICKHEAD","DICKS",
+  "COCK","COCKS",
+  "PISS","PISSED","PISSING",
+  "WHORE","WHORES",
+  "SLUT","SLUTTY","SLUTS",
+  "NIGGER","NIGGERS","NIGGA","NIGGAS",
+  "FAG","FAGGOT","FAGGOTS",
+  "RETARD","RETARDED",
+  "TWAT","TWATS",
+  "WANKER","WANKING","WANKERS"
+];
+function containsRestrictedWord(text){
+  const upper = text.toUpperCase();
+  return restrictedWords.some(w => new RegExp(`\\b${w}\\b`).test(upper));
+}
+function sanitizeStar(raw){
+  return (!isAdmin && containsRestrictedWord(raw)) ? "that" : raw;
+}
+
 function normalize(s){
   return s
     .toUpperCase()
@@ -71,8 +109,9 @@ function fillTemplate(template, stars){
   out = out.split("{name}").join(mem.name || "");
   out = out.split("{mood}").join(moodWord());
   stars.forEach((s, i) => {
-    out = out.split(`{${i}}`).join(s.toLowerCase());
-    out = out.split(`{reflect${i}}`).join(reflect(s));
+    const safe = sanitizeStar(s);
+    out = out.split(`{${i}}`).join(safe.toLowerCase());
+    out = out.split(`{reflect${i}}`).join(reflect(safe));
   });
   return out;
 }
@@ -101,6 +140,12 @@ specialRules.forEach(r => r.compiled = r.patterns.map(compilePattern));
 function applySpecialEffects(rule, stars){
   switch(rule.specialKey){
     case "CAPTURE_NAME":
+      // Names get echoed back in nearly every future reply via {name}, so a
+      // restricted word here would repeat far more than a one-off echo would.
+      // For non-admin accounts, don't store it at all — ask again instead.
+      if(!isAdmin && containsRestrictedWord(stars[0])){
+        return "Hmm, let's find something else to call you — what would you like your name to be?";
+      }
       mem.name = titleCase(stars[0].toLowerCase());
       return fillTemplate(pick(rule.replies), stars);
 
@@ -429,6 +474,7 @@ document.getElementById("logoutLink").addEventListener("click", async (e) => {
     document.getElementById("whoText").textContent = "logged in as " + meData.user.username;
     document.getElementById("whoRow").style.display = "flex";
     if(meData.user.role === "admin"){
+      isAdmin = true;
       document.getElementById("adminLink").style.display = "inline-block";
     }
 

@@ -51,6 +51,38 @@ app.use("/api/auth", require("./server/routes/auth")(pool));
 app.use("/api/memory", require("./server/routes/memory")(pool));
 app.use("/api/admin", require("./server/routes/admin")(pool));
 
+// Keep last_active_at fresh for any logged-in request (not just login itself),
+// so someone who stays logged in via their cookie for weeks without re-entering
+// their password is still correctly counted as "active."
+app.use((req, res, next) => {
+  if(req.session && req.session.user){
+    pool.query("UPDATE users SET last_active_at = NOW() WHERE id = ?", [req.session.user.id])
+      .catch((err) => console.error("Could not update last_active_at:", err));
+  }
+  next();
+});
+
+// ---------- inactivity cleanup ----------
+// Deletes accounts that haven't been active in 120+ days. The admin account
+// (matching ADMIN_USERNAME) is explicitly exempt, regardless of activity —
+// so you can never lock yourself out by being away for a few months.
+const INACTIVITY_DAYS = 120;
+async function cleanupInactiveUsers() {
+  try {
+    const [result] = await pool.query(
+      `DELETE FROM users
+       WHERE role != 'admin'
+         AND last_active_at < DATE_SUB(NOW(), INTERVAL ? DAY)`,
+      [INACTIVITY_DAYS]
+    );
+    if (result.affectedRows > 0) {
+      console.log(`Removed ${result.affectedRows} account(s) inactive for ${INACTIVITY_DAYS}+ days.`);
+    }
+  } catch (err) {
+    console.error("Inactivity cleanup failed:", err);
+  }
+}
+
 // ---------- self-seed on first boot ----------
 // If the topics table is empty, populate it (and the rules table) from
 // db/seedData.js. Safe to leave in place — it only runs when the table is empty,
@@ -184,4 +216,6 @@ ensureSeeded()
   .catch((err) => console.error("Seeding failed:", err))
   .finally(() => {
     app.listen(PORT, () => console.log(`Slippers backend listening on port ${PORT}`));
+    cleanupInactiveUsers();
+    setInterval(cleanupInactiveUsers, 24 * 60 * 60 * 1000); // once a day
   });

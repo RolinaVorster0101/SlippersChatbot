@@ -15,6 +15,11 @@
 <div class="adminTopbar">
   <h1>Slippers <span class="adminTag">admin</span></h1>
   <div class="adminTopbarRight">
+    <button id="exportBtn" class="topLink" style="background:none;border:none;cursor:pointer;font:inherit;">Export rules</button>
+    <label class="topLink" style="cursor:pointer;">
+      Import rules
+      <input type="file" id="importFile" accept="application/json" style="display:none;">
+    </label>
     <span id="whoText"></span>
     <a href="/" class="topLink">back to chat</a>
     <a href="#" id="logoutLink" class="topLink">log out</a>

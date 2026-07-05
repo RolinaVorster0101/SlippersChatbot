@@ -62,6 +62,26 @@
   justify-content:center;
 }
 
+.ageConfirmRow{
+  margin:14px 0 4px;
+}
+.ageCheckLabel{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  font-size:13px;
+  font-weight:600;
+  color:var(--ink);
+  cursor:pointer;
+}
+.ageCheckLabel input{
+  margin-top:2px;
+  width:16px;
+  height:16px;
+  accent-color:var(--rose-deep);
+  flex:0 0 auto;
+}
+
 .authBtn{
   width:100%;
   padding:12px;

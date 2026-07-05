@@ -1,103 +1,133 @@
-# Slippers backend — Phase 1: data-driven rules
+# Slippers 🩰
 
-This is the foundation piece: a small Express API, backed by a MariaDB database,
-that serves the chatbot's topics and rules as JSON instead of a hardcoded array
-in the HTML file. This is what makes an admin panel possible later — editing a
-row in the database changes what Slippers says, with no code deploy needed.
+A pattern-matching chatbot in the spirit of old AIML-era bots like Mitsuku — no machine
+learning, no LLM, just a database of trigger phrases and replies, wrapped in a soft
+ballet-pink UI with a hand-animated SVG avatar (blinking, winking, glancing around,
+chuckling at "lol"/"haha").
 
-## What's NOT in here yet (by design, for this phase)
+Live at: **slippers.rvor.co.za**
 
-A handful of rules still live in the front-end JS because they involve
-stateful behaviour (memory, mood, pronoun reflection) rather than a plain
-pattern → reply lookup: name capture/recall, the badword-aware "YOU ARE *"
-check, "HOW ARE YOU" + its yes/no follow-up, "I FEEL *" reflection, the
-bad-language filter, and "FORGET ME". Everything else (identity chit-chat,
-greetings, jokes, and all five topics — weather/sports/gaming/philosophy/ballet)
-is now data-driven. We'll fold the rest in during the admin-panel phase.
+## What's actually in here
 
-## 1. Create the database in DirectAdmin
+- **Chat engine** (`public/js/chat.js`) — fetches rules from the database, matches the
+  user's message against them (exact-phrase patterns always beat wildcard `*` patterns;
+  topic-scoped rules always beat generic ones), and picks a random reply.
+- **Topics** — WEATHER, SPORTS, GAMING, PHILOSOPHY (bait-and-switch), BALLET. Fully
+  admin-editable, and you can add new ones from the browser.
+- **User accounts** — registration (honeypot + rate limiting + Cloudflare Turnstile +
+  required 18+ confirmation) and login (rate limiting + Turnstile), sessions stored in
+  MySQL, per-account chat memory (name/mood/topic) instead of browser localStorage.
+- **Admin panel** (`/admin.html`) — sidebar of topics, full CRUD on topics and rules,
+  changes go live immediately with no redeploy. Export/import buttons let you sync rules
+  you've tested locally over to the live site (see below).
+- **"Special" rules** — name memory, mood tracking, ELIZA-style pronoun reflection
+  ("I feel anxious" → "why do you feel anxious?"), and "forget me" all live in the
+  database like everything else (wording/patterns are admin-editable), but their
+  underlying mechanic is fixed in code via a `special_key` column — see
+  `public/js/chat.js`'s `applySpecialEffects()`. These 8 rules can't be deleted from the
+  admin panel (only disabled), to prevent accidentally breaking a core mechanic.
+- **Inactivity cleanup** — accounts inactive for 120+ days are automatically deleted
+  (the admin account is explicitly exempt, regardless of activity). Runs once at boot,
+  then once every 24 hours.
+- **Legal pages** — `/privacy.html` and `/terms.html`, a cookie consent banner, and a
+  footer with contact details on every public page.
+- **Mobile responsive** — all pages adapt below ~600-760px, including the admin sidebar
+  restructuring into a stacked layout.
 
-1. In DirectAdmin, find **MySQL Management** (usually under "Extra Features" or
-   your account's feature list).
-2. Create a new database — e.g. name it `slippers` (DirectAdmin will prefix it
-   with your account name automatically, like `teoihwmx_slippers`).
-3. Create a database user for it, and note down:
-   - the **database name** (with prefix)
-   - the **username** (with prefix)
-   - the **password** you set
-   - the **host** — almost always `localhost` on shared hosting
-
-## 2. Import the schema
-
-1. Open **phpMyAdmin** (you already found this).
-2. Select your new database in the left sidebar.
-3. Click the **Import** tab.
-4. Choose the file `db/schema.sql` from this project and click **Go**.
-5. You should now see two empty tables: `topics` and `rules`.
-
-You do **not** need to run any seed script by hand — the app seeds itself
-automatically the first time it starts, if it finds the `topics` table empty.
-
-## 3. Upload the project files
-
-Upload this whole folder (`app.js`, `package.json`, `.env.example`, `db/`)
-somewhere **outside** `public_html` — e.g. a folder like `slippers-backend/`
-in your home directory. DirectAdmin's Node Selector runs the app itself; it
-doesn't need to sit in your public web folder.
-
-Rename `.env.example` to `.env` and fill in the values from Step 1:
+## Folder structure
 
 ```
-DB_HOST=localhost
-DB_USER=teoihwmx_yourdbuser
-DB_PASSWORD=your-db-password
-DB_NAME=teoihwmx_slippers
+app.js                      Express entry point — sessions, static files, seeding, cleanup job
+server/
+  middleware/auth.js         requireAuth, requireAdmin
+  routes/
+    auth.js                  register, login, logout, me
+    memory.js                per-account name/mood/topic (GET/PUT/DELETE)
+    admin.js                 topics + rules CRUD, export/import
+db/
+  schema.sql                 full table definitions (reference — see migration notes below)
+  seedData.js                initial topic content (weather/sports/gaming/philosophy/ballet)
+  specialRuleSeed.js          the 8 special-mechanic rule definitions
+public/
+  index.html, css/style.css, js/chat.js       the chat page itself
+  login.html, register.html, css/auth.css, js/login.js, js/register.js
+  admin.html, css/admin.css, js/admin.js
+  privacy.html, terms.html, css/legal.css
+  css/site.css, js/cookieConsent.js            shared footer + cookie banner styling/logic
 ```
 
-## 4. Create the Node.js app in DirectAdmin
+## Environment variables
 
-Back in the **Setup Node.js App** screen you showed me:
-
-| Field | Value |
-|---|---|
-| Node.js version | **18.20.8 (recommended)** |
-| Application mode | Production |
-| Application root | the folder you uploaded to, e.g. `slippers-backend` |
-| Application URL | pick a subdomain, e.g. `api.rvor.co.za` or a path like `slippers.rvor.co.za/api` |
-| Application startup file | `app.js` |
-
-Click **Create**. DirectAdmin will show you the app's management page with
-buttons for:
-
-- **Run NPM Install** — click this once, it reads `package.json` and installs
-  `express`, `mysql2`, and `dotenv`.
-- **Restart** — click this any time you update files or need the seed logic
-  to re-run its check.
-
-## 5. Verify it's working
-
-Visit (in a browser):
+Copy `.env.example` to `.env` (locally) or set these in DirectAdmin's Node app
+Environment Variables section (live):
 
 ```
-https://api.rvor.co.za/api/health
+DB_HOST, DB_USER, DB_PASSWORD, DB_NAME    your MySQL/MariaDB credentials
+SESSION_SECRET                             random string, signs login cookies (see notes below)
+ADMIN_USERNAME                             whichever username should become admin on registration
+TURNSTILE_SECRET_KEY                       from Cloudflare Turnstile (leave unset locally = dev bypass)
 ```
 
-You should see `{"ok":true}`. Then check:
+`SESSION_SECRET` doesn't need to match between local and live — they're two independent
+servers, each just needs its own random value. `TURNSTILE_SECRET_KEY` left blank skips
+the captcha check entirely, which is fine for local dev but should always be set live.
 
-```
-https://api.rvor.co.za/api/rules
-```
+## Local development
 
-You should see a big JSON array of every rule — patterns, replies, topic
-linkage. If the `topics` table was empty, the first request that starts the
-app will trigger the seed automatically (check the app's log output in
-DirectAdmin if you want to confirm it ran).
+1. MySQL/MariaDB server running locally (Workbench is just the GUI client — you need an
+   actual server underneath it, e.g. installed via the MySQL Installer on Windows)
+2. Create a local database, run `db/schema.sql` against it once
+3. `npm install`
+4. `npm start`, visit `http://localhost:3000` — redirects to `/login.html` since nothing's
+   logged in yet. Register with the username set as `ADMIN_USERNAME` to get admin access.
 
-## Next phase
+## Deploying to DirectAdmin (live)
 
-Once this is confirmed working, the next steps are:
-1. Point the existing chat front-end at `/api/rules` instead of its hardcoded array
-2. Add the remaining stateful rules as proper API-driven "actions"
-3. Build login/accounts so memory is tied to a real user instead of a browser
-4. Build the admin panel UI on top of this same API (it'll just add
-   `POST`/`PUT`/`DELETE` routes to `/api/rules` and `/api/topics`)
+1. Create a MySQL database + user (Extra Features → MySQL Management), note the credentials
+2. Import `db/schema.sql` via phpMyAdmin's Import tab
+3. Upload the project (minus `node_modules`, `.env`, `.git`) to a folder **outside**
+   `public_html` — e.g. `domains/yourdomain/slippers-app`
+4. Setup Node.js App → Node 18.20.8, Production mode, point Application root at that
+   folder, startup file `app.js`, add the environment variables above
+5. Run NPM Install, then Restart
+
+The app self-seeds its own database on first boot (topics/rules if empty, special rules
+individually by key) — no manual data-entry script needed, ever.
+
+## Applying schema changes to an existing (already-seeded) database
+
+Since `CREATE TABLE IF NOT EXISTS` doesn't retroactively add columns, whenever a change
+adds new columns to an existing table, you'll get a specific `ALTER TABLE` snippet to run
+once in Workbench (local) and once in phpMyAdmin's SQL tab (live) — new rows/rules are
+always self-healing, but new *columns* need this one manual step. Current schema
+includes all such changes; check git history if you need to reconstruct what changed when.
+
+## Syncing rules between local and live
+
+These are two entirely separate databases with no connection to each other. To bring
+rules you've tested locally over to the live site: **Export rules** in the local admin
+panel (downloads a JSON file) → **Import rules** in the live admin panel (upload that
+file). Safe to re-run any time — it skips anything that already exists (matched by exact
+pattern list) and never touches the 8 protected special rules.
+
+## Still outstanding / explicitly deferred
+
+- **Password reset / forgot password** — deferred. Would require collecting email
+  addresses at registration and setting up outbound mail (DirectAdmin can do this, but
+  it's a separate setup step). For now, only you (the admin) exist as a realistic account
+  to lose access to, and this trade-off was made deliberately for now.
+- **User management UI** — deliberately skipped in favor of the 120-day inactivity
+  auto-delete, since there's only one admin and no real moderation need.
+- **General user management/moderation tools** — not built; revisit if the user base or
+  need for oversight grows.
+
+## A few real bugs found and fixed along the way (for context if something seems off)
+
+- MariaDB's JSON columns get auto-parsed by the driver — code must check
+  `typeof x === "string"` before calling `JSON.parse()`, or it'll silently mangle data.
+- Rule matching must check exact-phrase patterns before wildcard (`*`) patterns, and
+  topic-scoped rules before generic ones — otherwise a vague rule can steal messages
+  meant for a more specific one (this bit us twice before the general fix went in).
+- Session cookies marked `secure: true` get silently dropped without `app.set("trust
+  proxy", 1)`, since Express can't otherwise tell it's behind DirectAdmin's HTTPS-terminating
+  reverse proxy.

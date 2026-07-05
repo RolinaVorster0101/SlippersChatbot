@@ -18,9 +18,14 @@ form.addEventListener("submit", async (e) => {
   const password = document.getElementById("password").value;
   const password2 = document.getElementById("password2").value;
   const website = document.getElementById("website").value; // honeypot
+  const ageConfirmed = document.getElementById("ageConfirm").checked;
 
   if(password !== password2){
     showError("Passwords don't match.");
+    return;
+  }
+  if(!ageConfirmed){
+    showError("Please confirm you're 18 or older to continue.");
     return;
   }
 
@@ -34,7 +39,7 @@ form.addEventListener("submit", async (e) => {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password, website, turnstileToken }),
+      body: JSON.stringify({ username, password, website, turnstileToken, ageConfirmed }),
     });
     const data = await res.json();
 

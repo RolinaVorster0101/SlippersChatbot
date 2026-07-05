@@ -45,7 +45,7 @@ module.exports = function(pool){
   const router = express.Router();
 
   router.post("/register", registerLimiter, async (req, res) => {
-    const { username, password, turnstileToken, website } = req.body || {};
+    const { username, password, turnstileToken, website, ageConfirmed } = req.body || {};
 
     // Honeypot: real users never fill this hidden field in. Bots often do.
     if(website){
@@ -57,6 +57,10 @@ module.exports = function(pool){
     }
     if(!password || password.length < 8){
       return res.status(400).json({ error: "Password must be at least 8 characters." });
+    }
+    // Never trust the checkbox state from the client alone — enforce it here too.
+    if(ageConfirmed !== true){
+      return res.status(400).json({ error: "You must confirm you are 18 or older to register." });
     }
 
     const okCaptcha = await verifyTurnstile(turnstileToken, req.ip);
@@ -75,7 +79,7 @@ module.exports = function(pool){
       const role = (process.env.ADMIN_USERNAME && username === process.env.ADMIN_USERNAME) ? "admin" : "user";
 
       const [result] = await conn.query(
-        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+        "INSERT INTO users (username, password_hash, role, age_confirmed, age_confirmed_at) VALUES (?, ?, ?, 1, NOW())",
         [username, passwordHash, role]
       );
       await conn.query("INSERT INTO user_memory (user_id) VALUES (?)", [result.insertId]);
@@ -91,9 +95,14 @@ module.exports = function(pool){
   });
 
   router.post("/login", loginLimiter, async (req, res) => {
-    const { username, password } = req.body || {};
+    const { username, password, turnstileToken } = req.body || {};
     if(!username || !password){
       return res.status(400).json({ error: "Username and password required." });
+    }
+
+    const okCaptcha = await verifyTurnstile(turnstileToken, req.ip);
+    if(!okCaptcha){
+      return res.status(400).json({ error: "Captcha verification failed. Please try again." });
     }
 
     try{
@@ -110,6 +119,7 @@ module.exports = function(pool){
         return res.status(401).json({ error: "Incorrect username or password." });
       }
 
+      await pool.query("UPDATE users SET last_active_at = NOW() WHERE id = ?", [user.id]);
       req.session.user = { id: user.id, username: user.username, role: user.role };
       res.json({ ok: true, user: req.session.user });
     } catch(err){
